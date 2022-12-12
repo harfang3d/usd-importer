@@ -1,0 +1,50 @@
+name: Build USD Importer
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Visual Studio
+      run: |
+        choco install visualstudio2019buildtools
+        choco install visualstudio2019-workload-vctools
+    - name: Install python, CMake, nasm, git, ninja
+      run: |
+        choco install python3 -y --params "/InstallDir:c:\Python";
+        choco install 7zip cmake nasm git ninja -y; 
+        setx PATH "%PATH%;%PROGRAMFILES%/Git/bin;%PROGRAMFILES%/Cmake/bin;%PROGRAMFILES%/NASM;%PROGRAMFILES%/7-Zip;C:/Python/Scripts"
+
+    - name: Setup environment
+      run: |      
+        git clone –-depth 1 https://github.com/PixarAnimationStudios/USD
+        cd USD
+        git apply ../usd.patch
+        cd ..
+
+        pip install PyOpenGL PySide2
+        python USD\build_scripts\build_usd.py --build-variant release --no-python --no-tools --no-tutorials --no-docs --no-tests --no-examples --no-usdview --imaging --opencolorio --materialx --ptex --build-monolithic USD_build_Release
+
+        mkdir build
+        cd build
+        mkdir hg
+        cd hg
+        git clone --depth 1 --single-branch --branch master --recurse-submodules https://github.com/harfang3d/harfang3d.git src
+        git clone --depth 1 https://github.com/ejulien/FABGen.git fabgen
+        cd ..
+        mkdir cmake
+        cd cmake
+        cmake ../.. -A x64 -DHG_SRC_DIR="../hg/src" -DUSD_SDK_DIR="c:"
+        cmake --build . --target install --config Release
+        cd ../..
+    - name: Publish build artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: USD_Importer
+        path: USD_Importer
+
+
