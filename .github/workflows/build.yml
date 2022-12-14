@@ -1,46 +1,69 @@
 name: Build USD Importer
 
 on:
-  push:
-    branches: [ master ]
+  push
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Install Visual Studio
-      run: |
-        choco install visualstudio2019buildtools
-        choco install visualstudio2019-workload-vctools
     - name: Install python, CMake, nasm, git, ninja
+      shell: cmd
       run: |
         choco install python3 -y --params "/InstallDir:c:\Python";
         choco install 7zip cmake nasm git ninja -y; 
         setx PATH "%PATH%;%PROGRAMFILES%/Git/bin;%PROGRAMFILES%/Cmake/bin;%PROGRAMFILES%/NASM;%PROGRAMFILES%/7-Zip;C:/Python/Scripts"
+        refreshenv
+
+    - name: Install Visual Studio
+      shell: cmd
+      run: |      
+        powershell -NoProfile -ExecutionPolicy Bypass -Command Invoke-WebRequest "https://aka.ms/vs/16/release/vs_community.exe" -OutFile "%TEMP%\vs_community.exe" -UseBasicParsing
+        "%TEMP%\vs_community.exe"  --quiet --wait --norestart --noUpdateInstaller --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows10SDK.18362        
+        refreshenv
 
     - name: Setup environment
+      shell: cmd
       run: |      
-        git clone –-depth 1 https://github.com/PixarAnimationStudios/USD
+        "C:\Program Files\Git\bin\git.exe" clone -b v22.05a --depth 1 https://github.com/PixarAnimationStudios/USD.git
         cd USD
-        git apply ../usd.patch
-        cd ..
-
-        pip install PyOpenGL PySide2
-        python USD\build_scripts\build_usd.py --build-variant release --no-python --no-tools --no-tutorials --no-docs --no-tests --no-examples --no-usdview --imaging --opencolorio --materialx --ptex --build-monolithic USD_build_Release
-
+        "C:\Program Files\Git\bin\git.exe" apply ../usd.patch
+        cd ..      
         mkdir build
         cd build
         mkdir hg
         cd hg
-        git clone --depth 1 --single-branch --branch master --recurse-submodules https://github.com/harfang3d/harfang3d.git src
-        git clone --depth 1 https://github.com/ejulien/FABGen.git fabgen
-        cd ..
+        "C:\Program Files\Git\bin\git.exe" clone --depth 1 --single-branch --branch main --recurse-submodules https://github.com/harfang3d/harfang3d.git src
+        "C:\Program Files\Git\bin\git.exe" clone --depth 1 https://github.com/ejulien/FABGen.git fabgen
+        cd ../..
+
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+        vsversion : "2022"
+
+    - name: Install Python packages
+      shell: cmd
+      run: |
+        python -m pip install PySide2 PyOpenGL pypeg2 
+    
+    - name: build USD
+      shell: cmd
+      run: |      
+        python USD\build_scripts\build_usd.py --build-variant release --no-python --no-tools --no-tutorials --no-docs --no-tests --no-examples --no-usdview --imaging --materialx --ptex --build-monolithic USD_build_Release
+
+    - name: Build
+      shell: cmd
+      run: |
+        C:/hostedtoolcache/windows/Python/3.11.0/x86/python3.exe -m pip install pypeg2 
+        cd build
         mkdir cmake
         cd cmake
-        cmake ../.. -A x64 -DHG_SRC_DIR="../hg/src" -DUSD_SDK_DIR="c:"
+        cmake ../.. -A x64 -DHG_SRC_DIR="../hg/src" -DUSD_SDK_DIR="../../"
         cmake --build . --target install --config Release
         cd ../..
+
     - name: Publish build artifacts
       uses: actions/upload-artifact@v2
       with:
