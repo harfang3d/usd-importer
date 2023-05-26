@@ -1144,7 +1144,7 @@ int main(int argc, const char **argv) {
 		nullptr);
 	hg::set_log_level(hg::LL_All);
 
-	hg::debug(hg::format("USD->GS Converter %1 (%2)").arg(hg::get_version_string()).arg(hg::get_build_sha()).c_str());
+	hg::debug(hg::format("USD->HG Converter %1 (%2)").arg(hg::get_version_string()).arg(hg::get_build_sha()).c_str());
 
 	hg::CmdLineFormat cmd_format = {
 		{
