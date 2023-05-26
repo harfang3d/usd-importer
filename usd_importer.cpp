@@ -124,7 +124,7 @@ static bool GetOutputPath(
 			return false;
 
 		case ImportPolicy::SkipAlways:
-			return false; // WARNING do not move to the start of the function, we need the path for the resource even if it is not exported
+			return false; // WARNING: Do not move this to the start of the function. The path for the resource is needed even if it is not exported.
 
 		case ImportPolicy::SkipExisting:
 			if (hg::Exists(path.c_str()))
@@ -221,7 +221,7 @@ static hg::Material ExportMaterial(const pxr::UsdShadeShader &shaderUSD, std::se
 
 							auto y = attrTexture.GetTypeName().GetCPPTypeName();
 
-							// get asset file
+							// Retrieve the asset file.
 							pxr::SdfAssetPath assetPath;
 							attrTexture.Get(&assetPath);
 
@@ -229,13 +229,13 @@ static hg::Material ExportMaterial(const pxr::UsdShadeShader &shaderUSD, std::se
 
 							auto texRef = picture_dest_path_to_tex_ref[dst_path];
 
-							// add the texture to the material
+							// Add the texture to the material.
 							if (baseNameShaderInput == "diffuseColor" && texRef != hg::InvalidTextureRef)
 								albedoTexture = texRef;
 							if (baseNameShaderInput == "opacity" && texRef != hg::InvalidTextureRef)
 								opacityTexture = texRef;
 
-							// make the orm from the possible value
+							// Generate the ORM (Occlusion, Roughness, Metallic) using the available values.
 							if (baseNameShaderInput == "occlusion" && texRef != hg::InvalidTextureRef)
 								occlusionTexture = texRef;
 							if (baseNameShaderInput == "roughness" && texRef != hg::InvalidTextureRef)
@@ -243,7 +243,7 @@ static hg::Material ExportMaterial(const pxr::UsdShadeShader &shaderUSD, std::se
 							if (baseNameShaderInput == "metallic" && texRef != hg::InvalidTextureRef)
 								metallicTexture = texRef;
 
-							// normal texture
+							// Handle the normal texture.
 							if (baseNameShaderInput == "normal" && texRef != hg::InvalidTextureRef) {
 								hg::debug(hg::format("		- uNormalMap: %1").arg(resources.textures.GetName(texRef)));
 
@@ -256,7 +256,7 @@ static hg::Material ExportMaterial(const pxr::UsdShadeShader &shaderUSD, std::se
 								mat.textures["uNormalMap"] = {texRef, 2};
 							}
 
-							// emissive texture
+							// Handle the emissive texture.
 							if (baseNameShaderInput == "emissiveColor" && texRef != hg::InvalidTextureRef) {
 								hg::debug(hg::format("		- uSelfMap: %1").arg(resources.textures.GetName(texRef)));
 
@@ -269,22 +269,22 @@ static hg::Material ExportMaterial(const pxr::UsdShadeShader &shaderUSD, std::se
 								mat.textures["uSelfMap"] = {texRef, 4};
 							}
 						} else if (baseNameTextureInput == "st") {
-							// get the source connected to the output
+							// Retrieve the source that is connected to the output.
 							auto sourceUV = inputTexture.GetConnectedSources()[0].source;
 
-							// get the shader wher the output is
+							// Retrieve the shader where the output is located.
 							pxr::UsdShadeShader shaderUV(sourceUV.GetPrim());
 
-							// get input
+							// Retrieve the UV input.
 							auto inputUVName = shaderUV.GetInput(pxr::TfToken("varname"));
 
-							// if there is another sub check to material
+							// If there's another connected source, update the inputUVName.
 							if (inputUVName.GetConnectedSources().size() > 0) {
 								auto UVNameSource = inputUVName.GetConnectedSources()[0].source;
 								inputUVName = UVNameSource.GetInput(pxr::TfToken("stPrimvarName"));
 							}
 
-							// get token reference in the geo
+							// Retrieve the token reference within the geometry.
 							pxr::TfToken UVName;
 							inputUVName.GetAttr().Get(&UVName);
 							uvMapVarname.insert(UVName);
@@ -297,7 +297,7 @@ static hg::Material ExportMaterial(const pxr::UsdShadeShader &shaderUSD, std::se
 		}
 	}
 
-	// if there is albedo
+	// Check if there is an albedo.
 	if (albedoTexture != hg::InvalidTextureRef) {
 		hg::debug(hg::format("		- uBaseOpacityMap: %1").arg(resources.textures.GetName(albedoTexture)));
 
@@ -317,7 +317,7 @@ static hg::Material ExportMaterial(const pxr::UsdShadeShader &shaderUSD, std::se
 		}
 
 		mat.textures["uBaseOpacityMap"] = {albedoTexture, 0};
-	}else // if there is no abedo texture but only opacity (for decal for example)	 
+	}else // Check for cases where there is no albedo texture, but only opacity (e.g., for decals).
 		if (opacityTexture != hg::InvalidTextureRef) { 
 		hg::debug(hg::format("		- uOpacityMap: %1").arg(resources.textures.GetName(opacityTexture)));
 
@@ -334,7 +334,7 @@ static hg::Material ExportMaterial(const pxr::UsdShadeShader &shaderUSD, std::se
 		mat.textures["uBaseOpacityMap"] = {opacityTexture, 0};
 	}
 
-	// if there is orm
+	// Check if there is an ORM (Occlusion, Roughness, Metallic).
 	if (occlusionTexture != hg::InvalidTextureRef || roughnessTexture != hg::InvalidTextureRef || metallicTexture != hg::InvalidTextureRef) {
 		json preprocess;
 
@@ -380,7 +380,7 @@ static hg::Material ExportMaterial(const pxr::UsdShadeShader &shaderUSD, std::se
 		SetMaterialBlendMode(mat, hg::BM_Alpha);
 
 	if (!config.shader.empty())
-		shader = config.shader; // use override
+		shader = config.shader; // Use the overridden shader if provided.
 
 	hg::debug(hg::format("		- Using pipeline shader '%1'").arg(shader));
 	mat.program = resources.programs.Add(shader.c_str(), {});
@@ -429,7 +429,7 @@ static void ExportGeometry(
 			UVPrim.Get(&uvs.back());
 		}
 	}
-	// check if there is a geo subset
+	// If a geometry subset exists, retrieve its indices.
 	if (geoMeshSubSet)
 		geoMeshSubSet->GetIndicesAttr().Get(&faceSubsetIndices);
 
@@ -480,7 +480,7 @@ static void ExportGeometry(
 		face_offset += f_count;
 	}
 
-	// if subset, modify the geo, TODO absolutely not very fast method for now
+	// If a subset exists, modify the geometry. TODO: This current method is not very efficient, consider optimization.
 	if (faceSubsetIndices.size() > 0) {
 		std::vector<hg::Geometry::Polygon> pol;
 		std::vector<uint32_t> binding;
@@ -527,9 +527,9 @@ static hg::Object GetObjectWithMaterial(const pxr::UsdPrim &p, std::set<pxr::TfT
 	std::string path = p.GetPath().GetString();
 	auto object = scene.CreateObject();
 
-	// add material
-	// MATERIALS
-	// 1 material per primitive
+	// Add material to the primitive.
+	// MATERIALS:
+	// Assign one material per primitive.
 	bool foundMat = false;
 	pxr::UsdShadeMaterialBindingAPI materialBinding(p);
 	auto binding = materialBinding.GetDirectBinding();
@@ -574,10 +574,10 @@ static hg::Object GetObjectWithMaterial(const pxr::UsdPrim &p, std::set<pxr::TfT
 			object.SetMaterial(0, std::move(mat));
 			object.SetMaterialName(0, shader.GetPath().GetString());
 		}else
-			hg::error("!!!!!!! shader not valid, very weird");
+			hg::error("!Unexpected shader from UsdShadeShader()");
 	}
 	
-	// if mat not found make a dummy material to see the object in the engine
+	// If the material is not found, create a dummy material to make the object visible in the engine.
 	if(!foundMat) {
 		hg::debug(hg::format("	- Has no material, set a dummy one"));
 
@@ -587,7 +587,7 @@ static hg::Object GetObjectWithMaterial(const pxr::UsdPrim &p, std::set<pxr::TfT
 		shader = "core/shader/pbr.hps";
 
 		if (!config.shader.empty())
-			shader = config.shader; // use override
+			shader = config.shader; // Use the overridden shader if it is provided in the configuration.
 
 		hg::debug(hg::format("	- Using pipeline shader '%1'").arg(shader));
 		mat.program = resources.programs.Add(shader.c_str(), {});
@@ -634,11 +634,11 @@ static hg::Object ExportObject(const pxr::UsdPrim &p, hg::Node *node, hg::Scene 
 	auto j=p.GetPrimIndex().GetRootNode().GetLayerStack()->GetLayers();
 	auto k = p.GetPrimIndex().GetRootNode().GetLayerStack()->GetLayers()[0]->GetDisplayName();
 */
-	// don't find geo, import it
+	// If the geometry is not found, import it.
 	if (primToObject.find(hashIdentifierPrim) != primToObject.end()) {
 		object = primToObject[hashIdentifierPrim];
 	} else {
-		// don't find geo, import it
+		// If the geometry is not found, import it.
 		hg::Geometry geo;
 
 		std::set<pxr::TfToken> uvMapVarname;
@@ -650,7 +650,7 @@ static hg::Object ExportObject(const pxr::UsdPrim &p, hg::Node *node, hg::Scene 
 		const auto vtx_to_pol = hg::ComputeVertexToPolygon(geo);
 		auto vtx_normal = hg::ComputeVertexNormal(geo, vtx_to_pol, hg::Deg(45.f));
 
-		// recalculate normals
+		// Recalculate the vertex normals.
 		bool recalculate_normal = config.recalculate_normal;
 		if (geo.normal.empty())
 			recalculate_normal = true;
@@ -661,7 +661,7 @@ static hg::Object ExportObject(const pxr::UsdPrim &p, hg::Node *node, hg::Scene 
 		} else
 			vtx_normal = geo.normal;
 
-		// recalculate tangent frame
+		// Recalculate the vertex tangent frame.
 		bool recalculate_tangent = config.recalculate_tangent;
 		if (geo.tangent.empty())
 			recalculate_tangent = true;
@@ -829,9 +829,9 @@ static void ExportNode(const pxr::UsdPrim &p, hg::Node *nodeParent, hg::Scene &s
 	// Transform
 	hg::Mat4 m = GetXFormMat(p);
 
-	// if there is no parent, modify the base matrix
+	// If there is no parent, modify the base matrix.
 	if (!nodeParent) {
-		// rotate the transform because up is Z
+		// Rotate the transform to account for the Z-axis as the up direction.
 		if (UsdGeomGetStageUpAxis(p.GetStage()) == pxr::UsdGeomTokens->z) {
 			hg::Mat44 to_hg(1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f);
 
@@ -880,7 +880,7 @@ static void ExportNode(const pxr::UsdPrim &p, hg::Node *nodeParent, hg::Scene &s
 			hashIdentifierPrim = pxr::TfStringify(o.GetLayerStack()) + o.GetPath().GetText();
 
 		// auto j = c.GetPrimIndex().DumpToString();
-		//  don't find geo, import it
+		// If the geometry is not found, import it.
 		if (primToObject.find(hashIdentifierPrim) != primToObject.end()) {
 			object = primToObject[hashIdentifierPrim];
 		} else {
@@ -905,7 +905,7 @@ static void ExportNode(const pxr::UsdPrim &p, hg::Node *nodeParent, hg::Scene &s
 		}
 		node.SetObject(object);
 
-		// if it's a subset, be sure to remove the parent mesh object 
+		// If it's a subset, make sure to remove the parent mesh object.
 		nodeParent->SetObject({});
 
 	} // Sphere
@@ -913,7 +913,7 @@ static void ExportNode(const pxr::UsdPrim &p, hg::Node *nodeParent, hg::Scene &s
 		std::set<pxr::TfToken> uvMapVarname;
 		auto object = GetObjectWithMaterial(p, uvMapVarname, scene, config, resources);
 
-		// TODO CAN'T SAVE PROCEDURAL => IMPROVISE
+		// FIXME: Unable to save procedural geometry, replace it with a generic model.
 	/* bgfx::VertexLayout vs_pos_normal_decl;
 		vs_pos_normal_decl.begin();
 		vs_pos_normal_decl.add(bgfx::Attrib::Enum::Position, 3, bgfx::AttribType::Enum::Float);
@@ -934,7 +934,7 @@ static void ExportNode(const pxr::UsdPrim &p, hg::Node *nodeParent, hg::Scene &s
 
 	}
 	
-	// Check children
+	// Check the children.
 	if (p.IsInstance()){
 		auto proto = p.GetPrototype();
 		auto protoName = proto.GetName().GetString();
@@ -964,7 +964,7 @@ static void ExportNode(const pxr::UsdPrim &p, hg::Node *nodeParent, hg::Scene &s
 		for (auto c : p.GetChildren())
 			ExportNode(c, &node, scene, config, resources);
 
-	// set the matrix
+	// Set the matrix
 	node.GetTransform().SetLocal(m);
 }
 
@@ -1024,7 +1024,7 @@ static bool ImportUSDScene(const std::string &path, const Config &config) {
 					auto y = attrTexture.GetTypeName().GetCPPTypeName();
 
 					if (baseName == "file") {
-						// get asset file
+						// Retrieve the asset file.
 						pxr::SdfAssetPath assetPath;
 						attrTexture.Get(&assetPath, 0);
 
@@ -1032,7 +1032,7 @@ static bool ImportUSDScene(const std::string &path, const Config &config) {
 						pxr::ArResolver &resolver = pxr::ArGetResolver();
 						resolver.RefreshContext(p.GetStage()->GetPathResolverContext());
 
-						// TODO replace <UDIM> with 1001 , i have no idea how to resolve that yet
+						// FIXME: Arbitrarily replace <UDIM> with 1001. Currently unsure how to resolve this.
 						if (assetPath.GetResolvedPath() == "") {
 							std::string assetPathToCheck = assetPath.GetAssetPath();
 							hg::replace_all(assetPathToCheck, "<UDIM>", "1001");
@@ -1041,15 +1041,15 @@ static bool ImportUSDScene(const std::string &path, const Config &config) {
 						}
 
 						if (assetPath.GetResolvedPath() != "") {
-							// get texture
+							// Retrieve the texture.
 							auto textureAsset = resolver.OpenAsset(pxr::ArResolvedPath(assetPath.GetResolvedPath()));
 							std::string dst_path;
 							auto findOutputPath = GetOutputPath(dst_path, config.base_output_path + "/Textures", hg::GetFileName(assetPath.GetAssetPath()), {},
 								hg::GetFileExtension(assetPath.GetAssetPath()), config.import_policy_texture);
 
-							// get the sha1 from this texture and check if we already have it
+							// Retrieve the SHA1 hash of this texture and check if we already have it.
 							auto sha1Picture = hg::ComputeSHA1String(textureAsset->GetBuffer().get(), textureAsset->GetSize());
-							// if the sha1 is not found, import the texture
+							// If the SHA1 hash is not found, import the texture.
 							if (picture_sha1_to_dest_path.find(sha1Picture) == picture_sha1_to_dest_path.end()) {
 								picture_sha1_to_dest_path[sha1Picture] = dst_path;
 
@@ -1059,7 +1059,7 @@ static bool ImportUSDScene(const std::string &path, const Config &config) {
 									myfile.close();
 								}
 
-								// add .meta to ignore this texture from assetc (if there is a material using it, it will be overwriten)
+								// Add ".meta" to ignore this texture from assetc (if it is used by a material, it will be overwritten).
 								std::string dst_path_meta;
 								if (GetOutputPath(dst_path_meta, config.base_output_path + "/Textures", hg::CutFilePath(assetPath.GetAssetPath()), {}, "meta", config.import_policy_texture)) {
 									if (std::FILE *f = std::fopen(dst_path_meta.c_str(), "w")) {
@@ -1069,16 +1069,16 @@ static bool ImportUSDScene(const std::string &path, const Config &config) {
 									}
 								}
 
-								// keep saved texture
+								// Keep the saved texture.
 								uint32_t flags = BGFX_SAMPLER_NONE;
 								std::string dst_rel_path = MakeRelativeResourceName(dst_path, config.prj_path, config.prefix);
 								auto text_ref = resources.textures.Add(dst_rel_path.c_str(), { flags, BGFX_INVALID_HANDLE });
 
-								// cache the texture path to tex ref
+								// Cache the texture path to the texture reference.
 								picture_dest_path_to_tex_ref[dst_path] = text_ref;
 							}
 							else {
-								// get the tex ref from the cache sha1 and report to the cach texref
+								// Retrieve the texture reference from the cached SHA1 and report it to the cache texture reference.
 								picture_dest_path_to_tex_ref[dst_path] = picture_dest_path_to_tex_ref[picture_sha1_to_dest_path[sha1Picture]];
 							}
 						} else
@@ -1089,13 +1089,13 @@ static bool ImportUSDScene(const std::string &path, const Config &config) {
 		}
 	}
 
-	// export nodes
+	// Export nodes.
 	auto children = stage->GetPseudoRoot().GetChildren();
 	for (auto p : children) {
 		ExportNode(p, nullptr, scene, config, resources);
 	}
 
-	// add default pbr map
+	// Add default PBR map.
 	scene.environment.brdf_map = resources.textures.Add("core/pbr/brdf.dds", {BGFX_SAMPLER_NONE, BGFX_INVALID_HANDLE});
 	scene.environment.probe.irradiance_map = resources.textures.Add("core/pbr/probe.hdr.irradiance", {BGFX_SAMPLER_NONE, BGFX_INVALID_HANDLE});
 	scene.environment.probe.radiance_map = resources.textures.Add("core/pbr/probe.hdr.radiance", {BGFX_SAMPLER_NONE, BGFX_INVALID_HANDLE});
