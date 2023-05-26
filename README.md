@@ -6,7 +6,7 @@ This tool, `usd_importer`, is a USD to HARFANG 3D converter. This document outli
 
 USD to GS Converter 3.2.5 (f0b82d43186b058be90b4518e2a444cd8581ecf2)
 
-## Command Line Usage
+## :computer: Command Line Usage
 
 ```sh
 USD->GS Converter 3.2.5 (f0b82d43186b058be90b4518e2a444cd8581ecf2)
