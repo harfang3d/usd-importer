@@ -2,9 +2,10 @@
 
 This tool, `usd_importer`, is a USD to HARFANG 3D converter. This document outlines the main parameters and usage of this command-line tool.
 
-## Version
+## Example
 
-USD to GS Converter 3.2.5 (f0b82d43186b058be90b4518e2a444cd8581ecf2)
+![USDz model](img/train_usdz.png)
+![HG model](img/train_hgs.png)<br>
 
 ## :computer: Command Line Usage
 
