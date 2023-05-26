@@ -1,8 +1,7 @@
-// Harfang Framework - Copyright 2001-2022 Thomas Simonnet. All Rights Reserved.
+// Harfang Framework - Copyright 2001-2023 Thomas Simonnet. All Rights Reserved.
+// USD format importer.
 
 #define NOMINMAX
-
-//#include <engine/stb_image.h>
 
 #include <engine/geometry.h>
 #include <engine/model_builder.h>
@@ -156,218 +155,6 @@ static std::string MakeRelativeResourceName(const std::string &name, const std::
 }
 
 //
-////
-//static void ExportMotions(const Model &model, const Scene &gltf_scene, hg::Scene &scene, const Config &config) {
-//	if (!config.import_animation)
-//		return;
-//
-//	// all animations
-//	hg::debug(hg::format("animations(items=%1)").arg(model.animations.size()).c_str());
-//	for (size_t i = 0; i < model.animations.size(); i++) {
-//		const tinygltf::Animation &animation = model.animations[i];
-//		hg::debug(hg::format(Indent(1) + "name         : %1").arg(animation.name.empty() ? "anim_" + std::to_string(i) : animation.name).c_str());
-//
-//		hg::SceneAnim scene_anim{animation.name.empty() ? "anim_" + std::to_string(i) : animation.name, hg::time_from_sec(99999), hg::time_from_sec(-99999)};
-//
-//		std::vector<hg::AnimRef> anims;
-//
-//		// add animations samplers
-//		hg::debug(hg::format(Indent(1) + "samplers(items=%1)").arg(animation.samplers.size()).c_str());
-//		for (size_t j = 0; j < animation.samplers.size(); j++) {
-//			const tinygltf::AnimationSampler &sampler = animation.samplers[j];
-//			hg::debug(hg::format(Indent(2) + "input         : %1").arg(sampler.input).c_str());
-//			hg::debug(hg::format(Indent(2) + "interpolation : %1").arg(sampler.interpolation).c_str());
-//			hg::debug(hg::format(Indent(2) + "output        : %1").arg(sampler.output).c_str());
-//
-//			// input (usually the time) Get the good buffer from all the gltf micmac
-//			const auto inputAccessor = model.accessors[sampler.input];
-//			const auto &inputBufferView = model.bufferViews[inputAccessor.bufferView];
-//			const auto &inputBuffer = model.buffers[inputBufferView.buffer];
-//			const auto inputDataPtr = inputBuffer.data.data() + inputBufferView.byteOffset + inputAccessor.byteOffset;
-//			const auto input_byte_stride = inputAccessor.ByteStride(inputBufferView);
-//			const auto input_count = inputAccessor.count;
-//
-//			//	hg::debug(hg::format("input attribute has count %1 and stride %2 bytes").arg(input_count).arg(input_byte_stride).c_str());
-//
-//			// output (value for the key) Get the good buffer from all the gltf micmac
-//			const auto outputAccessor = model.accessors[sampler.output];
-//			const auto &outputBufferView = model.bufferViews[outputAccessor.bufferView];
-//			const auto &outputBuffer = model.buffers[outputBufferView.buffer];
-//			const auto outputDataPtr = outputBuffer.data.data() + outputBufferView.byteOffset + outputAccessor.byteOffset;
-//			const auto output_byte_stride = outputAccessor.ByteStride(outputBufferView);
-//			const auto output_count = outputAccessor.count;
-//
-//			//	hg::debug(hg::format("output attribute has count %1 and stride %2 bytes").arg(output_count).arg(output_byte_stride).c_str());
-//
-//			const auto anim_ref = scene.AddAnim({});
-//			anims.push_back(anim_ref);
-//			auto anim = scene.GetAnim(anim_ref);
-//
-//			// get channel type anim
-//			std::string target_path = "";
-//			for (size_t k = 0; k < animation.channels.size(); k++)
-//				if (animation.channels[k].sampler == j)
-//					target_path = animation.channels[j].target_path;
-//
-//			// Transfers the value and time from the buffer to harfang depending of the type
-//			switch (inputAccessor.type) {
-//				case TINYGLTF_TYPE_SCALAR: {
-//					switch (inputAccessor.componentType) {
-//						case TINYGLTF_COMPONENT_TYPE_FLOAT: {
-//							hg::debug("Input type is FLOAT");
-//							// vector of float
-//							floatArray<float> time(arrayAdapter<float>(inputDataPtr, input_count, input_byte_stride));
-//
-//							hg::debug(hg::format("time's size : %1").arg(time.size()).c_str());
-//
-//							switch (outputAccessor.type) {
-//								case TINYGLTF_TYPE_VEC4: {
-//									switch (outputAccessor.componentType) {
-//										case TINYGLTF_COMPONENT_TYPE_FLOAT: {
-//											hg::debug("Output type is FLOAT");
-//
-//											v4fArray value(arrayAdapter<hg::Vec4>(outputDataPtr, output_count, output_byte_stride));
-//
-//											hg::debug(hg::format("value's size : %1").arg(value.size()).c_str());
-//											anim->quat_tracks.push_back({"NO_MATCH", {}});
-//											anim->flags |= hg::AF_UseQuaternionForRotation;
-//
-//											for (size_t k{0}; k < time.size(); ++k) {
-//												auto t = hg::time_from_sec_f(time[k]);
-//												auto v = value[k];
-//												// hg::debug(hg::format("t[%1]: (%2), v[%3]: (%4, %5, %6,
-//												// %7)").arg(k).arg(t).arg(k).arg(v.x).arg(v.y).arg(v.z).arg(v.w).c_str());
-//												auto r = hg::ToEuler(hg::Quaternion(v.x, v.y, v.z, v.w));
-//												hg::SetKey(anim->quat_tracks.back(), t, hg::QuaternionFromEuler(-r.x, -r.y, r.z));
-//											}
-//											anim->t_start = hg::time_from_sec_f(time[0]);
-//											anim->t_end = hg::time_from_sec_f(time[time.size() - 1]);
-//
-//											scene_anim.t_start = hg::Min(scene_anim.t_start, anim->t_start);
-//											scene_anim.t_end = hg::Max(scene_anim.t_end, anim->t_end);
-//										} break;
-//										default:
-//											hg::error("Error: Animation values needs to be Float (else not implemented)");
-//											break;
-//									}
-//
-//								} break;
-//
-//								case TINYGLTF_TYPE_VEC3: {
-//									switch (outputAccessor.componentType) {
-//										case TINYGLTF_COMPONENT_TYPE_FLOAT: {
-//											hg::debug("Output type is FLOAT");
-//
-//											v3fArray value(arrayAdapter<hg::Vec3>(outputDataPtr, output_count, output_byte_stride));
-//
-//											hg::debug(hg::format("value's size : %1").arg(value.size()).c_str());
-//											anim->vec3_tracks.push_back({"NO_MATCH", {}});
-//
-//											for (size_t k{0}; k < time.size(); ++k) {
-//												auto t = hg::time_from_sec_f(time[k]);
-//												auto v = value[k];
-//
-//												// fix only for pos
-//												if (target_path == "translation")
-//													v.z = -v.z;
-//
-//												// hg::debug(hg::format("t[%1]: (%2), v[%3]: (%4, %5,
-//												// %6)").arg(k).arg(t).arg(k).arg(v.x).arg(v.y).arg(v.z).c_str());
-//												hg::SetKey(anim->vec3_tracks.back(), t, v);
-//											}
-//											anim->t_start = hg::time_from_sec_f(time[0]);
-//											anim->t_end = hg::time_from_sec_f(time[time.size() - 1]);
-//
-//											scene_anim.t_start = hg::Min(scene_anim.t_start, anim->t_start);
-//											scene_anim.t_end = hg::Max(scene_anim.t_end, anim->t_end);
-//										} break;
-//										default:
-//											hg::error("Error: Animation values needs to be Float (else not implemented)");
-//											break;
-//									}
-//
-//								} break;
-//							}
-//						} break;
-//						default:
-//							hg::error("Error: Time values needs to be Float (else not implemented)");
-//							break;
-//					}
-//					break;
-//				}
-//			}
-//		}
-//
-//		// add animation channel, link from the anim track made above to the type of animaton and to the node
-//		hg::debug((Indent(1) + "channels : [ ").c_str());
-//		for (size_t j = 0; j < animation.channels.size(); j++) {
-//			hg::debug(hg::format(Indent(2) + "sampler     : %1").arg(animation.channels[j].sampler).c_str());
-//			hg::debug(hg::format(Indent(2) + "target.id   : %1").arg(animation.channels[j].target_node).c_str());
-//			hg::debug(hg::format(Indent(2) + "target.path : %1").arg(animation.channels[j].target_path).c_str());
-//			hg::debug((j != (animation.channels.size() - 1)) ? "  , " : "");
-//
-//			if (animation.channels[j].sampler < anims.size()) {
-//				auto anim_ref = anims[animation.channels[j].sampler];
-//				auto anim = scene.GetAnim(anim_ref);
-//
-//				scene_anim.node_anims.push_back({idNode_to_NodeRef[animation.channels[j].target_node], anim_ref});
-//
-//				std::string target;
-//				if (animation.channels[j].target_path == "translation")
-//					target = "Position";
-//				else if (animation.channels[j].target_path == "rotation")
-//					target = "Rotation";
-//				else if (animation.channels[j].target_path == "scale")
-//					target = "Scale";
-//				else if (animation.channels[j].target_path == "weights")
-//					target = "Weights";
-//
-//				// find which track is not empty
-//				if (anim->bool_tracks.size())
-//					anim->bool_tracks.back().target = target;
-//				else if (anim->int_tracks.size())
-//					anim->int_tracks.back().target = target;
-//				else if (anim->float_tracks.size())
-//					anim->float_tracks.back().target = target;
-//				else if (anim->vec2_tracks.size())
-//					anim->vec2_tracks.back().target = target;
-//				else if (anim->vec3_tracks.size())
-//					anim->vec3_tracks.back().target = target;
-//				else if (anim->vec4_tracks.size())
-//					anim->vec4_tracks.back().target = target;
-//				else if (anim->quat_tracks.size())
-//					anim->quat_tracks.back().target = target;
-//			}
-//		}
-//		hg::debug("  ]");
-//
-//		scene.AddSceneAnim(scene_anim);
-//	}
-//}
-//
-////
-//static void ExportSkins(const Model &model, const Scene &gltf_scene, hg::Scene &scene, const Config &config) {
-//	// all skins
-//	hg::debug(hg::format("skin(items=%1)").arg(model.skins.size()).c_str());
-//	for (size_t gltf_id_node = 0; gltf_id_node < model.nodes.size(); ++gltf_id_node) {
-//		const auto &gltf_node = model.nodes[gltf_id_node];
-//		if (gltf_node.skin >= 0) {
-//			const auto &skin = model.skins[gltf_node.skin];
-//			auto node = scene.GetNode(idNode_to_NodeRef[gltf_id_node]);
-//			if (auto object = node.GetObject()) {
-//				object.SetBoneCount(skin.joints.size());
-//				for (size_t j = 0; j < skin.joints.size(); j++)
-//					object.SetBone(j, idNode_to_NodeRef[skin.joints[j]]);
-//			}
-//		}
-//	}
-//}
-//
-////----
-//static bool ExportDeformers(hg::Model &mdl, hg::Object *object) { return false; }
-//
-
-////
 static hg::Material ExportMaterial(const pxr::UsdShadeShader &shaderUSD, std::set<pxr::TfToken> &uvMapVarname, const pxr::UsdStage &stage,
 	const Config &config, hg::PipelineResources &resources) {
 
@@ -1299,17 +1086,6 @@ static bool ImportUSDScene(const std::string &path, const Config &config) {
 					}
 				}
 			}
-			//if ptex texture, TODO, code just to test something
-			if (infoId == pxr::UsdHydraTokens->HwPtexTexture_1) {
-
-				/*Ptex::String error;
-				auto ptex = PtexTexture::open("C:\\Users\\Scorpheus\\Downloads\\island-usd-v2.0\\island-usd-v2.0\\island\\textures\\isMountainB\\Color\\mountainb0004_geo.ptx", error, false);
-				int faceid = 0;
-				char* buffer = new char[ptex->dataType() * ptex->numChannels() * ptex->getFaceInfo(faceid).res.size()];
-				ptex->getData(faceid, buffer, 0);
-				ptex->release();*/
-
-			}
 		}
 	}
 
@@ -1323,14 +1099,7 @@ static bool ImportUSDScene(const std::string &path, const Config &config) {
 	scene.environment.brdf_map = resources.textures.Add("core/pbr/brdf.dds", {BGFX_SAMPLER_NONE, BGFX_INVALID_HANDLE});
 	scene.environment.probe.irradiance_map = resources.textures.Add("core/pbr/probe.hdr.irradiance", {BGFX_SAMPLER_NONE, BGFX_INVALID_HANDLE});
 	scene.environment.probe.radiance_map = resources.textures.Add("core/pbr/probe.hdr.radiance", {BGFX_SAMPLER_NONE, BGFX_INVALID_HANDLE});
-/*	scene.environment.env_map = resources.textures.Add("core/pbr/probe.hdr", {BGFX_SAMPLER_NONE, BGFX_INVALID_HANDLE});
-	scene.environment.env_sh = {{{0.028443, 0.057680, 0.067597, 0.132088, 0.057680, -0.028443, 0.307539, 0.149751, 0.067597, 0.307539, 0.567706, 0.717092,
-										0.132088, 0.149751, 0.717092, 1.784944},
-		{0.049736, 0.018319, 0.083665, 0.143268, 0.018319, -0.049736, 0.291909, 0.127507, 0.083665, 0.291909, 0.679665, 0.730860, 0.143268, 0.127507,
-			0.730860, 1.553001},
-		{0.097520, -0.053124, 0.097579, 0.157690, -0.053124, -0.097520, 0.287982, 0.118280, 0.097579, 0.287982, 0.930277, 0.827362, 0.157690, 0.118280,
-			0.827362, 1.400534}}};
-*/
+
 	std::string out_path;
 	if (GetOutputPath(out_path, config.base_output_path,
 			config.name.empty() ? hg::GetFileName(path) : config.name, {}, "scn",
