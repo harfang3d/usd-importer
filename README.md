@@ -11,7 +11,7 @@ _Left: Original USD file / Right: imported file into HARFANG._
 ## :computer: Command Line Usage
 
 ```sh
-USD->GS Converter 3.2.5 (f0b82d43186b058be90b4518e2a444cd8581ecf2)
+USD->HG Converter 3.2.5 (f0b82d43186b058be90b4518e2a444cd8581ecf2)
 No input file
 Usage: usd_importer [-out|-o (val)] [-base-resource-path (val)] [-name (val)] [-prefix (val)] [-all-policy
                      (val)] [-geometry-policy (val)] [-material-policy (val)] [-texture-policy (val)]
