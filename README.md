@@ -6,6 +6,7 @@ This tool, `usd_importer`, is a USD to HARFANG 3D converter. This document outli
 
 ![USDz model](img/train_usdz.png)
 ![HG model](img/train_hgs.png)<br>
+_Left: Original USD file / Right: imported file into HARFANG._ 
 
 ## :computer: Command Line Usage
 
